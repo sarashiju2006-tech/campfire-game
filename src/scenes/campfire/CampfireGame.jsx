@@ -25,6 +25,8 @@ import fire3 from "../../assets/sprites/fire_3.png";
 import fire4 from "../../assets/sprites/fire_4.png";
 import stickPileSrc from "../../assets/sprites/stick_pile.png";
 import stickSrc from "../../assets/sprites/stick.png";
+import campfireLoopSrc from "../../assets/audio/campfire_loop.mp3";
+import pickupSrc from "../../assets/audio/pickup.mp3";
 
 const FIRE_SPRITES = [fire0, fire1, fire2, fire3, fire4];
 
@@ -184,7 +186,7 @@ const styles = `
   .cf-sticks {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 96x;
+  width: 96px;
   height: 72px;
 
   background: transparent;
@@ -533,6 +535,8 @@ function GameCore({ onWin, onLose, nightConfig, nightNumber }) {
   } = nightConfig;
 
   const keysRef      = useRef({});
+  const campfireAudioRef = useRef(null);
+const pickupAudioRef = useRef(null);
   const playerRef    = useRef({
     x: GAME_W * 0.5,
     y: GAME_H * 0.7,
@@ -578,6 +582,20 @@ function GameCore({ onWin, onLose, nightConfig, nightNumber }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    campfireAudioRef.current = new Audio(campfireLoopSrc);
+    campfireAudioRef.current.loop = true;
+    campfireAudioRef.current.volume = 0.15;
+  
+    pickupAudioRef.current = new Audio(pickupSrc);
+    pickupAudioRef.current.volume = 0.3;
+  
+    campfireAudioRef.current.play().catch(() => {});
+  
+    return () => {
+      campfireAudioRef.current?.pause();
+    };
+  }, []);
 
   // ── Game loop ─────────────────────────────────────────────
   useEffect(() => {
@@ -592,7 +610,11 @@ function GameCore({ onWin, onLose, nightConfig, nightNumber }) {
           // Original central pile behaviour
           if (dist(x, y, STICK_POS.x, STICK_POS.y) < INTERACT_DIST) {
             carryRef.current = true;
-            if (aliveRef.current) setCarrying(true);
+
+
+if (aliveRef.current) {
+  setCarrying(true);
+}
           }
         } else {
           // [NEW] Scattered: pick up whichever visible stick we're near
@@ -608,10 +630,12 @@ function GameCore({ onWin, onLose, nightConfig, nightNumber }) {
               s.id === bestId ? { ...s, visible: false } : s
             );
             carryRef.current = true;
-            if (aliveRef.current) {
-              setCarrying(true);
-              setScatteredList([...scatteredRef.current]);
-            }
+
+
+if (aliveRef.current) {
+  setCarrying(true);
+  setScatteredList([...scatteredRef.current]);
+}
 
             // [NEW] Schedule respawn after STICK_RESPAWN_MS at a random position
             setTimeout(() => {
@@ -663,10 +687,14 @@ function GameCore({ onWin, onLose, nightConfig, nightNumber }) {
         });
 
         carryRef.current = false;
-        if (aliveRef.current) {
-          setCarrying(false);
-          setFires([...firesRef.current]);
-        }
+
+pickupAudioRef.current.currentTime = 0;
+pickupAudioRef.current.play();
+
+if (aliveRef.current) {
+  setCarrying(false);
+  setFires([...firesRef.current]);
+}
       }
     };
 
@@ -1010,11 +1038,13 @@ export default function CampfireGame() {
     </div>
 
     <button
-      className="cf-btn"
-      onClick={() => setPhase("playing")}
-    >
-      Begin ▶
-    </button>
+  className="cf-btn"
+  onClick={() => {
+    setPhase("playing");
+  }}
+>
+  Begin ▶
+</button>
   </div>
 )}
 
